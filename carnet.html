@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Carnet de Fan</title>
+<style>
+:root{
+  --fondo:#0a0410; --fondo2:#17091f;
+  --rosa:#ff2d87; --violeta:#8a4bff; --texto:#f6ecff; --texto-suave:#c6a9e6;
+  --display:"Futura","Century Gothic","Arial Narrow",system-ui,sans-serif;
+  --cuerpo:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --dur:1;
+  --t-a:#ff2d87; --t-b:#ff8ac2; --t-texto:#fff; --t-texto-suave:rgba(255,255,255,.8); --t-brillo:#fff;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--fondo);color:var(--texto);overflow:hidden;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--cuerpo);min-height:100vh;min-height:100dvh;
+  background:radial-gradient(circle at 18% 0%, rgba(138,75,255,.3), transparent 55%),
+             radial-gradient(circle at 85% 100%, rgba(255,45,135,.22), transparent 50%),
+             linear-gradient(180deg,var(--fondo),var(--fondo2))}
+h1,h2,h3,p{margin:0}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.oculto{display:none !important}
+input[type="text"],input[type="number"]{font:inherit;color:inherit}
+
+/* ===== pantallas ===== */
+.pantalla{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:calc(26px + var(--safe-t)) 20px calc(26px + var(--safe-b));opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity calc(.45s*var(--dur)) ease;gap:14px;text-align:center}
+.pantalla.activa{opacity:1;visibility:visible;pointer-events:auto}
+
+/* ===== botones ===== */
+.btn{padding:14px 24px;border-radius:999px;font-weight:800;font-size:.92rem;font-family:var(--display);
+  transition:transform .15s ease,filter .15s ease}
+.btn:active{transform:scale(.95)}
+.btn:focus-visible{outline:2px solid var(--rosa);outline-offset:3px}
+.btn-primario{background:linear-gradient(135deg,var(--rosa),var(--violeta));color:#fff;box-shadow:0 8px 20px rgba(255,45,135,.3)}
+.btn-secundario{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2);color:var(--texto)}
+.btn-fantasma{background:none;color:var(--texto-suave);font-size:.78rem;font-weight:600;padding:8px 10px}
+.fila-botones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.icono-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;font-size:1.05rem}
+.icono-btn:active{transform:scale(.9)}
+
+/* ===== bienvenida ===== */
+#texto-titulo{font-family:var(--display);font-weight:800;font-size:1.7rem;margin-top:6px}
+#texto-sub{font-size:.88rem;color:var(--texto-suave);max-width:280px}
+.intro-carnet{position:relative;width:150px;height:200px;margin-bottom:4px}
+.intro-carnet-cuerpo{position:absolute;inset:0;border-radius:16px;background:linear-gradient(160deg,var(--rosa),var(--violeta));
+  box-shadow:0 14px 34px rgba(255,45,135,.35);overflow:hidden;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;animation:salirCarnet calc(1.1s*var(--dur)) ease both}
+@keyframes salirCarnet{from{transform:translateY(40px) scale(.85);opacity:0}to{transform:none;opacity:1}}
+.intro-linea{height:8px;width:0;border-radius:4px;background:rgba(255,255,255,.75);animation:imprimirLinea calc(.9s*var(--dur)) ease forwards;animation-delay:calc(.6s*var(--dur))}
+.intro-linea.corta{width:0;animation-delay:calc(.9s*var(--dur))}
+@keyframes imprimirLinea{to{width:70px}}
+.intro-linea.corta{animation-name:imprimirLineaCorta}
+@keyframes imprimirLineaCorta{to{width:42px}}
+.intro-destello{position:absolute;inset:-20%;background:radial-gradient(circle,rgba(255,255,255,.9),transparent 60%);
+  opacity:0;animation:destelloPop calc(.6s*var(--dur)) ease calc(1.3s*var(--dur)) forwards}
+@keyframes destelloPop{0%{opacity:0;transform:scale(.4)}40%{opacity:.9}100%{opacity:0;transform:scale(1.3)}}
+
+/* ===== formulario ===== */
+#progreso-form{display:flex;gap:6px}
+#progreso-form i{width:18px;height:3px;border-radius:3px;background:rgba(255,255,255,.15);transition:background .3s}
+#progreso-form i.activo{background:var(--rosa)}
+#paso-contenedor{width:100%;max-width:360px;min-height:220px;display:flex;flex-direction:column;justify-content:center;
+  gap:14px;opacity:1;transform:translateY(0);transition:opacity calc(.3s*var(--dur)) ease,transform calc(.3s*var(--dur)) ease}
+#paso-contenedor.cambiando{opacity:0;transform:translateY(10px)}
+.paso-titulo{font-family:var(--display);font-weight:800;font-size:1.2rem}
+.paso-input{width:100%;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.07);
+  border:1.5px solid rgba(255,255,255,.18);color:var(--texto);font-size:1rem;text-align:center}
+.paso-input::placeholder{color:var(--texto-suave)}
+.paso-aviso{font-size:.74rem;color:#ffb0cf;min-height:1.1em}
+.paso-opcional{font-size:.7rem;color:var(--texto-suave)}
+.paso-foto-thumb{width:96px;height:96px;border-radius:50%;margin:0 auto;background-size:cover;background-position:center;
+  border:2px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+
+/* ===== carnet ===== */
+#envoltorio-carnet{perspective:900px}
+.carnet{width:min(72vw,300px);aspect-ratio:320/500;position:relative;border-radius:22px;overflow:hidden;
+  background:linear-gradient(160deg,var(--t-a),var(--t-b));color:var(--t-texto);
+  box-shadow:0 22px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.2) inset}
+.carnet-holo{position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.45;
+  background:repeating-linear-gradient(115deg,#ff5ad1 0%,#7afcff 14%,#c9ff5a 28%,#ffe45a 42%,#ff5ad1 56%);
+  background-size:260% 260%;background-position:var(--hx,50%) var(--hy,50%);transition:background-position .12s ease-out}
+.carnet-brillo{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.65;
+  background:radial-gradient(circle at var(--hx,50%) var(--hy,30%),var(--t-brillo),transparent 45%);
+  transition:background-position .12s ease-out}
+.carnet-contenido{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;
+  padding:16px 15px 12px;text-align:center}
+.carnet-encabezado{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:.58rem;
+  font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.92}
+.carnet-nivel{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.3)}
+.carnet-foto-wrap{margin-top:10px}
+.carnet-foto{width:80px;height:80px;border-radius:50%;background-size:cover;background-position:center;
+  border:3px solid rgba(255,255,255,.8);box-shadow:0 6px 14px rgba(0,0,0,.3)}
+.carnet-nombre{font-family:var(--display);font-weight:800;font-size:1.1rem;margin-top:9px;line-height:1.15}
+.carnet-banda{font-size:.75rem;font-weight:700;margin-top:3px}
+.carnet-bias{font-size:.66rem;margin-top:1px;opacity:.9}
+.carnet-frase{font-size:.64rem;font-style:italic;margin-top:8px;opacity:.9;line-height:1.3;max-width:92%}
+.carnet-fila-datos{display:flex;justify-content:space-between;width:100%;margin-top:auto;padding-top:10px;font-size:.6rem}
+.carnet-etiqueta{display:block;opacity:.78;text-transform:uppercase;letter-spacing:.05em;font-size:.5rem}
+.carnet-valor{display:block;font-weight:800;font-size:.7rem;margin-top:1px}
+.carnet-sello{position:absolute;top:12px;right:10px;width:44px;height:44px;z-index:3;opacity:.95}
+.carnet-sello svg{width:100%;height:100%}
+.carnet-codigo-barras{display:flex;align-items:flex-end;gap:1.5px;height:18px;width:100%;margin-top:7px;opacity:.85;color:var(--t-texto)}
+.carnet-codigo-barras span{display:block;flex:0 0 auto;background:currentColor}
+.carnet-pie{font-size:.48rem;opacity:.78;margin-top:5px}
+
+#selector-temas{display:flex;gap:10px;justify-content:center}
+.swatch-tema{width:30px;height:30px;border-radius:50%;border:2px solid transparent;position:relative}
+.swatch-tema.activo{border-color:#fff;box-shadow:0 0 0 2px var(--rosa)}
+.swatch-tema:active{transform:scale(.9)}
+#controles-carnet{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:6px}
+#aviso-carnet{font-size:.72rem;color:var(--texto-suave);min-height:1.1em}
+#btn-permiso-giro{position:fixed;top:calc(14px + var(--safe-t));right:14px;z-index:20}
+#btn-salir-grabacion{position:fixed;top:calc(14px + var(--safe-t));right:14px;z-index:30;display:none}
+
+body.modo-grabacion #controles-carnet,body.modo-grabacion #btn-permiso-giro{display:none}
+body.modo-grabacion #btn-salir-grabacion{display:flex}
+body.modo-grabacion{background:#000}
+body.modo-grabacion #pantalla-carnet{padding:0}
+
+/* ===== modal recorte de foto ===== */
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(4,1,8,.82);backdrop-filter:blur(4px);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+.modal.activo{opacity:1;visibility:visible}
+.caja-modal{width:min(360px,100%);padding:24px 20px;border-radius:22px;background:linear-gradient(160deg,#241033,#150819);
+  border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;align-items:center;gap:12px}
+.caja-modal h3{font-family:var(--display);font-size:1.1rem}
+.sub-modal{font-size:.78rem;color:var(--texto-suave)}
+#recorte-viewport{width:220px;height:220px;border-radius:50%;overflow:hidden;position:relative;background:#000;
+  border:2px dashed rgba(255,255,255,.3);touch-action:none}
+#recorte-imagen{position:absolute;left:0;top:0;transform-origin:top left;user-select:none;-webkit-user-drag:none}
+#recorte-zoom{width:100%}
+#aviso-foto{font-size:.72rem;color:#ffb0cf;min-height:1.1em}
+
+/* ===== accesibilidad ===== */
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--rosa);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){
+  :root{--dur:.001}
+  .intro-destello{animation:none;opacity:0}
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas-export" class="oculto" aria-hidden="true"></canvas>
+
+<!-- ===== PANTALLA 1: BIENVENIDA ===== -->
+<section class="pantalla activa" id="pantalla-bienvenida" data-pantalla="bienvenida">
+  <div class="intro-carnet" aria-hidden="true">
+    <div class="intro-carnet-cuerpo">
+      <div class="intro-linea"></div>
+      <div class="intro-linea corta"></div>
+    </div>
+    <div class="intro-destello"></div>
+  </div>
+  <h1 id="texto-titulo"></h1>
+  <p id="texto-sub"></p>
+  <button class="btn btn-primario" id="btn-crear"></button>
+</section>
+
+<!-- ===== PANTALLA 2: FORMULARIO ===== -->
+<section class="pantalla" id="pantalla-formulario" data-pantalla="formulario">
+  <div id="progreso-form"></div>
+  <div id="paso-contenedor"></div>
+  <div class="fila-botones" id="botones-formulario">
+    <button class="btn btn-secundario" id="btn-atras">Atrás</button>
+    <button class="btn btn-primario" id="btn-siguiente">Siguiente</button>
+  </div>
+</section>
+
+<!-- ===== PANTALLA 3: CARNET GENERADO ===== -->
+<section class="pantalla" id="pantalla-carnet" data-pantalla="carnet">
+  <div id="envoltorio-carnet">
+    <div class="carnet" id="carnet-preview">
+      <div class="carnet-holo" id="carnet-holo"></div>
+      <div class="carnet-brillo" id="carnet-brillo"></div>
+      <div class="carnet-contenido">
+        <div class="carnet-encabezado">
+          <span class="carnet-marca">CARNET DE FAN</span>
+          <span class="carnet-nivel" id="carnet-nivel"></span>
+        </div>
+        <div class="carnet-foto-wrap"><div class="carnet-foto" id="carnet-foto"></div></div>
+        <p class="carnet-nombre" id="carnet-nombre"></p>
+        <p class="carnet-banda" id="carnet-banda"></p>
+        <p class="carnet-bias" id="carnet-bias"></p>
+        <p class="carnet-frase" id="carnet-frase"></p>
+        <div class="carnet-fila-datos">
+          <div><span class="carnet-etiqueta">Fan desde</span><span class="carnet-valor" id="carnet-anio"></span></div>
+          <div><span class="carnet-etiqueta">N.º de socia</span><span class="carnet-valor" id="carnet-numero"></span></div>
+        </div>
+        <div class="carnet-sello" id="carnet-sello" aria-hidden="true"></div>
+        <div class="carnet-codigo-barras" id="carnet-barras" aria-hidden="true"></div>
+        <p class="carnet-pie" id="carnet-pie"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="controles-carnet">
+    <button class="icono-btn oculto" id="btn-permiso-giro" aria-label="Activar brillo con movimiento">✨</button>
+    <div id="selector-temas"></div>
+    <div class="fila-botones">
+      <button class="btn btn-primario" id="btn-descargar">⬇ Descargar</button>
+      <button class="btn btn-secundario oculto" id="btn-compartir">↗ Compartir</button>
+    </div>
+    <div class="fila-botones">
+      <button class="btn btn-fantasma" id="btn-grabacion">🎥 Modo grabación</button>
+      <button class="btn btn-fantasma" id="btn-crear-otro">Crear otro</button>
+    </div>
+    <p id="aviso-carnet"></p>
+  </div>
+  <button class="icono-btn" id="btn-salir-grabacion">✕</button>
+</section>
+
+<!-- ===== MODAL: RECORTAR FOTO ===== -->
+<div class="modal" id="modal-foto">
+  <div class="caja-modal">
+    <h3>Ajustá tu foto</h3>
+    <p class="sub-modal">Arrastrá para mover, deslizá para acercar</p>
+    <div id="recorte-viewport">
+      <img id="recorte-imagen" alt="" draggable="false">
+    </div>
+    <input type="range" id="recorte-zoom" min="1" max="3" step="0.01" value="1">
+    <p id="aviso-foto"></p>
+    <div class="fila-botones">
+      <button class="btn btn-secundario" id="btn-cancelar-foto">Cancelar</button>
+      <button class="btn btn-primario" id="btn-confirmar-foto">Usar esta foto</button>
+    </div>
+  </div>
+</div>
+<input type="file" accept="image/*" id="input-foto" class="oculto">
+
+<script>
+"use strict";
+/* ======================================================================
+   CONFIGURACIÓN — todo lo editable vive acá
+   ====================================================================== */
+const CFG = {
+  titulo: "Carnet de Fan",
+  subtitulo: "Tu identidad de fan, lista para mostrar",
+  botonCrear: "Crear mi carnet",
+  pie: "Hecho con ❤️ por Bauti",
+
+  preguntas: [
+    { id: "nombre", tipo: "texto", etiqueta: "¿Cómo te llamás o cuál es tu apodo de fan?", placeholder: "Tu nombre o apodo", requerido: true, maxLargo: 22 },
+    { id: "banda", tipo: "texto", etiqueta: "¿Cuál es tu banda favorita?", placeholder: "Nombre de la banda", requerido: true, maxLargo: 26 },
+    { id: "bias", tipo: "texto", etiqueta: "¿Quién es tu bias?", placeholder: "Nombre del bias", requerido: false, maxLargo: 22 },
+    { id: "foto", tipo: "foto", etiqueta: "Subí tu foto para el carnet" },
+    { id: "anio", tipo: "anio", etiqueta: "¿Desde qué año sos fan?", placeholder: "Ej: 2021", requerido: true },
+    { id: "frase", tipo: "texto", etiqueta: "Una frase corta que te represente", placeholder: "Ej: Vivo para los comebacks", requerido: false, maxLargo: 40 }
+  ],
+
+  niveles: ["Fan Nueva", "Fan Dedicada", "Fan Estrella", "Fan Leyenda", "Fan Eterna"],
+
+  temas: [
+    { id: "rosa", nombre: "Rosa neón", a: "#ff2d87", b: "#ff8ac2", texto: "#ffffff", textoSuave: "rgba(255,255,255,.82)", brillo: "#ffffff" },
+    { id: "violeta", nombre: "Violeta galaxia", a: "#5b23c9", b: "#b98bff", texto: "#ffffff", textoSuave: "rgba(255,255,255,.82)", brillo: "#e4d4ff" },
+    { id: "celeste", nombre: "Celeste", a: "#0f8fc7", b: "#9fe8ff", texto: "#06263b", textoSuave: "rgba(6,38,59,.78)", brillo: "#ffffff" },
+    { id: "dorado", nombre: "Dorado", a: "#a87a1f", b: "#ffe9a8", texto: "#3a2405", textoSuave: "rgba(58,36,5,.78)", brillo: "#fff6d9" },
+    { id: "perlado", nombre: "Blanco perlado", a: "#d9deef", b: "#ffffff", texto: "#2a2a38", textoSuave: "rgba(42,42,56,.72)", brillo: "#ffffff" }
+  ]
+};
+
+/* ======================================================================
+   HELPERS
+   ====================================================================== */
+const $ = id => document.getElementById(id);
+function escaparHTML(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function prefiereMenosMovimiento() { return matchMedia("(prefers-reduced-motion: reduce)").matches; }
+function factorVelocidad() { return prefiereMenosMovimiento() ? 0.1 : 1; }
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) || 1; }
+function mulberry32(semilla) {
+  return function () {
+    semilla |= 0; semilla = (semilla + 0x6D2B79F5) | 0;
+    let t = Math.imul(semilla ^ (semilla >>> 15), 1 | semilla);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function redondearRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function cargarImagen(url) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = url; });
+}
+
+/* ======================================================================
+   ESTADO
+   ====================================================================== */
+let pasoActual = 0;
+const estado = { datos: {}, temaIdx: 0, numeroSocia: "", nivel: "", avatarDataURL: "", barrasData: [] };
+
+/* ======================================================================
+   NAVEGACIÓN DE PANTALLAS
+   ====================================================================== */
+const pantallas = {};
+document.querySelectorAll(".pantalla").forEach(p => { pantallas[p.dataset.pantalla] = p; });
+function mostrarPantalla(nombre) {
+  Object.keys(pantallas).forEach(n => pantallas[n].classList.toggle("activa", n === nombre));
+}
+
+/* ===== bienvenida ===== */
+$("texto-titulo").textContent = CFG.titulo;
+$("texto-sub").textContent = CFG.subtitulo;
+$("btn-crear").textContent = CFG.botonCrear;
+$("btn-crear").addEventListener("click", () => { pasoActual = 0; renderPaso(0); mostrarPantalla("formulario"); });
+
+/* ======================================================================
+   FORMULARIO PASO A PASO
+   ====================================================================== */
+const progresoForm = $("progreso-form");
+CFG.preguntas.forEach(() => { const i = document.createElement("i"); progresoForm.appendChild(i); });
+
+function actualizarProgreso(i) {
+  Array.prototype.forEach.call(progresoForm.children, (dot, idx) => dot.classList.toggle("activo", idx <= i));
+}
+
+function construirHTMLPaso(p) {
+  if (p.tipo === "foto") {
+    const tieneFoto = !!estado.datos.foto;
+    return (
+      '<p class="paso-titulo">' + escaparHTML(p.etiqueta) + "</p>" +
+      '<div class="paso-foto-thumb" id="paso-foto-thumb" style="' + (tieneFoto ? "background-image:url(" + estado.datos.foto + ")" : "") + '">' + (tieneFoto ? "" : "📷") + "</div>" +
+      '<div class="fila-botones">' +
+      '<button type="button" class="btn btn-secundario" id="btn-elegir-foto-paso">' + (tieneFoto ? "Cambiar foto" : "Elegir foto") + "</button>" +
+      (tieneFoto ? '<button type="button" class="btn btn-fantasma" id="btn-quitar-foto-paso">Quitar</button>' : "") +
+      "</div>" +
+      '<p class="paso-opcional">Opcional: si no subís nada, te genero un avatar.</p>'
+    );
+  }
+  if (p.tipo === "anio") {
+    return (
+      '<p class="paso-titulo">' + escaparHTML(p.etiqueta) + "</p>" +
+      '<input type="number" inputmode="numeric" class="paso-input" id="input-paso" placeholder="' + (p.placeholder || "") + '" value="' + (estado.datos[p.id] || "") + '" min="1990" max="' + new Date().getFullYear() + '">' +
+      '<p class="paso-aviso" id="paso-aviso"></p>'
+    );
+  }
+  return (
+    '<p class="paso-titulo">' + escaparHTML(p.etiqueta) + "</p>" +
+    '<input type="text" class="paso-input" id="input-paso" placeholder="' + escaparHTML(p.placeholder || "") + '" maxlength="' + (p.maxLargo || 40) + '" value="' + escaparHTML(estado.datos[p.id] || "") + '">' +
+    '<p class="paso-aviso" id="paso-aviso"></p>'
+  );
+}
+
+function conectarEventosPaso(p) {
+  if (p.tipo === "foto") {
+    $("btn-elegir-foto-paso").addEventListener("click", () => $("input-foto").click());
+    const btnQuitar = $("btn-quitar-foto-paso");
+    if (btnQuitar) btnQuitar.addEventListener("click", () => { estado.datos.foto = null; renderPaso(pasoActual, true); });
+  } else {
+    const input = $("input-paso");
+    if (input) {
+      input.addEventListener("input", () => { $("paso-aviso").textContent = ""; });
+      input.addEventListener("keydown", e => { if (e.key === "Enter") $("btn-siguiente").click(); });
+    }
+  }
+}
+
+function renderPaso(i, instantaneo) {
+  const p = CFG.preguntas[i];
+  const cont = $("paso-contenedor");
+  const hacer = () => {
+    cont.innerHTML = construirHTMLPaso(p);
+    conectarEventosPaso(p);
+    cont.classList.remove("cambiando");
+    actualizarProgreso(i);
+    $("btn-siguiente").textContent = i === CFG.preguntas.length - 1 ? "Crear mi carnet 🎉" : "Siguiente";
+    const input = $("input-paso");
+    if (input && !instantaneo) setTimeout(() => input.focus(), 50);
+  };
+  if (instantaneo) { hacer(); return; }
+  cont.classList.add("cambiando");
+  setTimeout(hacer, 180 * factorVelocidad());
+}
+
+function validarPaso(i) {
+  const p = CFG.preguntas[i];
+  if (p.tipo === "foto") return true;
+  const input = $("input-paso");
+  const valor = input ? input.value.trim() : "";
+  if (p.tipo === "anio") {
+    const n = parseInt(valor, 10);
+    const actual = new Date().getFullYear();
+    if (p.requerido && (!valor || isNaN(n) || n < 1990 || n > actual)) {
+      $("paso-aviso").textContent = "Poné un año entre 1990 y " + actual + ".";
+      return false;
+    }
+    estado.datos[p.id] = n || actual;
+    return true;
+  }
+  if (p.requerido && !valor) { $("paso-aviso").textContent = "Este dato hace falta para tu carnet."; return false; }
+  estado.datos[p.id] = valor;
+  return true;
+}
+
+$("btn-siguiente").addEventListener("click", () => {
+  if (!validarPaso(pasoActual)) return;
+  if (pasoActual < CFG.preguntas.length - 1) { pasoActual++; renderPaso(pasoActual); }
+  else { generarCarnet(); mostrarPantalla("carnet"); }
+});
+$("btn-atras").addEventListener("click", () => {
+  if (pasoActual > 0) { pasoActual--; renderPaso(pasoActual); }
+  else mostrarPantalla("bienvenida");
+});
+
+/* ======================================================================
+   RECORTE DE FOTO (todo en el navegador, nunca se sube a ningún servidor)
+   ====================================================================== */
+const recorte = { naturalW: 0, naturalH: 0, baseScale: 1, scale: 1, left: 0, top: 0, vp: 220 };
+const imgRecorte = $("recorte-imagen");
+
+$("input-foto").addEventListener("change", e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  imgRecorte.onload = () => {
+    recorte.naturalW = imgRecorte.naturalWidth;
+    recorte.naturalH = imgRecorte.naturalHeight;
+    recorte.baseScale = Math.max(recorte.vp / recorte.naturalW, recorte.vp / recorte.naturalH);
+    recorte.scale = 1;
+    const dw = recorte.naturalW * recorte.baseScale, dh = recorte.naturalH * recorte.baseScale;
+    recorte.left = (recorte.vp - dw) / 2; recorte.top = (recorte.vp - dh) / 2;
+    aplicarTransformRecorte();
+    $("recorte-zoom").value = 1;
+    $("aviso-foto").textContent = "";
+    $("modal-foto").classList.add("activo");
+    URL.revokeObjectURL(url);
+  };
+  imgRecorte.onerror = () => { $("aviso-foto").textContent = "No se pudo abrir esa imagen."; };
+  imgRecorte.src = url;
+});
+
+function aplicarTransformRecorte() {
+  const dw = recorte.naturalW * recorte.baseScale * recorte.scale, dh = recorte.naturalH * recorte.baseScale * recorte.scale;
+  imgRecorte.style.width = dw + "px"; imgRecorte.style.height = dh + "px";
+  imgRecorte.style.transform = "translate(" + recorte.left + "px," + recorte.top + "px)";
+}
+function clampRecorte() {
+  const dw = recorte.naturalW * recorte.baseScale * recorte.scale, dh = recorte.naturalH * recorte.baseScale * recorte.scale;
+  recorte.left = Math.min(0, Math.max(recorte.vp - dw, recorte.left));
+  recorte.top = Math.min(0, Math.max(recorte.vp - dh, recorte.top));
+}
+const viewportRecorte = $("recorte-viewport");
+let arrastrandoFoto = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+viewportRecorte.addEventListener("pointerdown", e => {
+  arrastrandoFoto = true; viewportRecorte.setPointerCapture(e.pointerId);
+  startX = e.clientX; startY = e.clientY; startLeft = recorte.left; startTop = recorte.top;
+});
+viewportRecorte.addEventListener("pointermove", e => {
+  if (!arrastrandoFoto) return;
+  recorte.left = startLeft + (e.clientX - startX); recorte.top = startTop + (e.clientY - startY);
+  clampRecorte(); aplicarTransformRecorte();
+});
+["pointerup", "pointercancel"].forEach(ev => viewportRecorte.addEventListener(ev, () => { arrastrandoFoto = false; }));
+$("recorte-zoom").addEventListener("input", e => {
+  const anterior = recorte.scale;
+  recorte.scale = parseFloat(e.target.value);
+  const factor = recorte.scale / anterior, c = recorte.vp / 2;
+  recorte.left = c - (c - recorte.left) * factor;
+  recorte.top = c - (c - recorte.top) * factor;
+  clampRecorte(); aplicarTransformRecorte();
+});
+
+$("btn-cancelar-foto").addEventListener("click", () => $("modal-foto").classList.remove("activo"));
+$("btn-confirmar-foto").addEventListener("click", () => {
+  const OUT = 480;
+  const c = document.createElement("canvas"); c.width = OUT; c.height = OUT;
+  const ctx = c.getContext("2d");
+  const escalaTotal = recorte.baseScale * recorte.scale;
+  const cropX = -recorte.left / escalaTotal, cropY = -recorte.top / escalaTotal, cropLado = recorte.vp / escalaTotal;
+  ctx.drawImage(imgRecorte, cropX, cropY, cropLado, cropLado, 0, 0, OUT, OUT);
+  estado.datos.foto = c.toDataURL("image/jpeg", 0.88);
+  $("modal-foto").classList.remove("activo");
+  renderPaso(pasoActual, true);
+});
+
+/* ======================================================================
+   GENERAR CARNET
+   ====================================================================== */
+function calcularNivel(anio) {
+  const actual = new Date().getFullYear();
+  let anios = actual - (anio || actual);
+  if (isNaN(anios) || anios < 0) anios = 0;
+  const idx = Math.min(CFG.niveles.length - 1, anios);
+  return CFG.niveles[idx];
+}
+function generarBarrasData(semilla) {
+  const rnd = mulberry32(hashStr(semilla));
+  const arr = [];
+  for (let i = 0; i < 34; i++) arr.push({ w: 1 + Math.floor(rnd() * 3), hPct: Math.round(48 + rnd() * 52) });
+  return arr;
+}
+function generarAvatarDataURL(nombre, tema) {
+  const rnd = mulberry32(hashStr((nombre || "fan") + tema.id));
+  const c = document.createElement("canvas"); c.width = 300; c.height = 300;
+  const ctx = c.getContext("2d");
+  const g = ctx.createLinearGradient(0, 0, 300, 300);
+  g.addColorStop(0, tema.a); g.addColorStop(1, tema.b);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 300, 300);
+  for (let i = 0; i < 3; i++) {
+    const x = 50 + rnd() * 200, y = 50 + rnd() * 200, r = 60 + rnd() * 70;
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, "rgba(255,255,255,.55)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  const inicial = (nombre || "F").trim().charAt(0).toUpperCase() || "F";
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  ctx.font = "800 150px " + getComputedStyle(document.body).fontFamily;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(inicial, 150, 162);
+  return c.toDataURL("image/png");
+}
+function selloSVG() {
+  const texto = "★ CARNET OFICIAL DE FAN ";
+  return (
+    '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><path id="circuloSello" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0"/></defs>' +
+    '<circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" opacity=".55"/>' +
+    '<circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".4"/>' +
+    '<text font-size="7" fill="currentColor" opacity=".85" letter-spacing="1">' +
+    '<textPath href="#circuloSello" startOffset="0%">' + texto + texto + "</textPath>" +
+    "</text>" +
+    '<text x="50" y="56" text-anchor="middle" font-size="18" fill="currentColor">★</text>' +
+    "</svg>"
+  );
+}
+function pintarBarrasDOM(cont, datos) {
+  cont.innerHTML = "";
+  datos.forEach(b => {
+    const s = document.createElement("span");
+    s.style.width = b.w + "px"; s.style.height = b.hPct + "%";
+    cont.appendChild(s);
+  });
+}
+function aplicarTemaCSSVars(tema) {
+  const el = $("carnet-preview");
+  el.style.setProperty("--t-a", tema.a); el.style.setProperty("--t-b", tema.b);
+  el.style.setProperty("--t-texto", tema.texto); el.style.setProperty("--t-texto-suave", tema.textoSuave);
+  el.style.setProperty("--t-brillo", tema.brillo);
+}
+function pintarSelectorTemas() {
+  const cont = $("selector-temas"); cont.innerHTML = "";
+  CFG.temas.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "swatch-tema" + (i === estado.temaIdx ? " activo" : "");
+    b.style.background = "linear-gradient(135deg," + t.a + "," + t.b + ")";
+    b.setAttribute("aria-label", "Tema " + t.nombre);
+    b.addEventListener("click", () => cambiarTema(i));
+    cont.appendChild(b);
+  });
+}
+function cambiarTema(i) {
+  estado.temaIdx = i;
+  const tema = CFG.temas[i];
+  aplicarTemaCSSVars(tema);
+  if (!estado.datos.foto) {
+    estado.avatarDataURL = generarAvatarDataURL(estado.datos.nombre, tema);
+    $("carnet-foto").style.backgroundImage = "url(" + estado.avatarDataURL + ")";
+  }
+  pintarSelectorTemas();
+}
+
+function generarCarnet() {
+  estado.numeroSocia = String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+  estado.nivel = calcularNivel(estado.datos.anio);
+  estado.barrasData = generarBarrasData((estado.datos.nombre || "fan") + estado.numeroSocia);
+  if (!estado.datos.foto) estado.avatarDataURL = generarAvatarDataURL(estado.datos.nombre, CFG.temas[estado.temaIdx]);
+  renderCarnetDOM();
+}
+
+function renderCarnetDOM() {
+  aplicarTemaCSSVars(CFG.temas[estado.temaIdx]);
+  $("carnet-nivel").textContent = estado.nivel;
+  $("carnet-foto").style.backgroundImage = "url(" + (estado.datos.foto || estado.avatarDataURL) + ")";
+  $("carnet-nombre").textContent = estado.datos.nombre || "Fan";
+  $("carnet-banda").textContent = estado.datos.banda || "";
+  const bias = $("carnet-bias"); bias.textContent = estado.datos.bias ? "Bias: " + estado.datos.bias : ""; bias.classList.toggle("oculto", !estado.datos.bias);
+  const frase = $("carnet-frase"); frase.textContent = estado.datos.frase || ""; frase.classList.toggle("oculto", !estado.datos.frase);
+  $("carnet-anio").textContent = estado.datos.anio || "—";
+  $("carnet-numero").textContent = estado.numeroSocia;
+  $("carnet-sello").innerHTML = selloSVG();
+  pintarBarrasDOM($("carnet-barras"), estado.barrasData);
+  $("carnet-pie").textContent = CFG.pie;
+  pintarSelectorTemas();
+}
+
+$("btn-crear-otro").addEventListener("click", () => {
+  estado.datos = {}; pasoActual = 0; renderPaso(0, true); mostrarPantalla("formulario");
+});
+
+/* ======================================================================
+   EFECTO HOLOGRÁFICO (dedo / mouse / giroscopio + barrido automático)
+   ====================================================================== */
+const carnetPreview = $("carnet-preview");
+let ultimoInputHolo = 0;
+function establecerHolo(px, py) {
+  carnetPreview.style.setProperty("--hx", px + "%");
+  carnetPreview.style.setProperty("--hy", py + "%");
+}
+function actualizarHoloPorInput(px, py) { ultimoInputHolo = performance.now(); establecerHolo(px, py); }
+carnetPreview.addEventListener("pointermove", e => {
+  const r = carnetPreview.getBoundingClientRect();
+  const px = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
+  const py = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100));
+  actualizarHoloPorInput(px, py);
+});
+function conectarGyro() {
+  window.addEventListener("deviceorientation", e => {
+    if (e.beta === null || e.beta === undefined) return;
+    const px = Math.min(100, Math.max(0, 50 + (e.gamma || 0) * 1.6));
+    const py = Math.min(100, Math.max(0, 50 + ((e.beta || 0) - 45) * 1.1));
+    actualizarHoloPorInput(px, py);
+  });
+}
+const btnPermisoGiro = $("btn-permiso-giro");
+if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+  btnPermisoGiro.classList.remove("oculto");
+  btnPermisoGiro.addEventListener("click", () => {
+    DeviceOrientationEvent.requestPermission().then(r => { if (r === "granted") conectarGyro(); }).catch(() => {});
+  });
+} else if (typeof DeviceOrientationEvent !== "undefined") {
+  conectarGyro();
+}
+function bucleHoloAutomatico(t) {
+  requestAnimationFrame(bucleHoloAutomatico);
+  if (prefiereMenosMovimiento()) return;
+  if (!pantallas.carnet.classList.contains("activa")) return;
+  if (performance.now() - ultimoInputHolo < 1200) return;
+  const ang = t / 1700;
+  establecerHolo(50 + Math.sin(ang) * 34, 50 + Math.cos(ang * 0.8) * 28);
+}
+requestAnimationFrame(bucleHoloAutomatico);
+
+/* ======================================================================
+   DESCARGAR PNG (dibujado manual en canvas, sin html2canvas)
+   ====================================================================== */
+function dibujarSelloCanvas(ctx, cx, cy, radio, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.globalAlpha = .55; ctx.lineWidth = Math.max(1.5, radio * 0.045);
+  ctx.beginPath(); ctx.arc(cx, cy, radio, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = .4; ctx.lineWidth = Math.max(1, radio * 0.03);
+  ctx.beginPath(); ctx.arc(cx, cy, radio * 0.66, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = .85; ctx.fillStyle = color;
+  const texto = "★ CARNET OFICIAL DE FAN ".repeat(2);
+  ctx.font = Math.round(radio * 0.16) + "px " + getComputedStyle(document.body).fontFamily;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const radioTexto = radio * 0.84;
+  for (let i = 0; i < texto.length; i++) {
+    const ang = (i / texto.length) * Math.PI * 2 - Math.PI / 2;
+    ctx.save();
+    ctx.translate(cx + Math.cos(ang) * radioTexto, cy + Math.sin(ang) * radioTexto);
+    ctx.rotate(ang + Math.PI / 2);
+    ctx.fillText(texto[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1; ctx.font = "bold " + Math.round(radio * 0.5) + "px sans-serif";
+  ctx.fillText("★", cx, cy + radio * 0.03);
+  ctx.restore();
+}
+function dibujarHoloEstatico(ctx, w, h) {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  const rg = ctx.createRadialGradient(w * 0.32, h * 0.16, 0, w * 0.32, h * 0.16, w * 0.75);
+  rg.addColorStop(0, "rgba(255,255,255,.55)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = "color-dodge"; ctx.globalAlpha = .22;
+  const lg = ctx.createLinearGradient(0, 0, w, h);
+  lg.addColorStop(0, "#ff5ad1"); lg.addColorStop(.3, "#7afcff"); lg.addColorStop(.6, "#c9ff5a"); lg.addColorStop(1, "#ffe45a");
+  ctx.fillStyle = lg; ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+function ajustarTextoCanvas(ctx, texto, cx, y, maxWidth, lineHeight) {
+  if (!texto) return 0;
+  const palabras = texto.split(" ");
+  let lineas = [""], li = 0;
+  palabras.forEach(p => {
+    const prueba = lineas[li] ? lineas[li] + " " + p : p;
+    if (ctx.measureText(prueba).width > maxWidth && lineas[li]) { li++; lineas[li] = p; } else lineas[li] = prueba;
+  });
+  if (lineas.length > 2) lineas = [lineas[0], lineas[1].slice(0, Math.max(0, lineas[1].length - 3)) + "…"];
+  lineas.forEach((l, i) => ctx.fillText(l, cx, y + i * lineHeight));
+  return lineas.length;
+}
+
+async function dibujarCarnetEnCanvas() {
+  const OUT_W = 1080, OUT_H = Math.round(OUT_W * 500 / 320);
+  const canvas = $("canvas-export"); canvas.width = OUT_W; canvas.height = OUT_H;
+  const ctx = canvas.getContext("2d");
+  const tema = CFG.temas[estado.temaIdx];
+  const fuente = getComputedStyle(document.body).fontFamily;
+  const fuenteDisplay = '"Futura","Century Gothic","Arial Narrow",' + fuente;
+  const R = OUT_W / 320; // factor de escala respecto al diseño de referencia (320px de ancho)
+
+  ctx.clearRect(0, 0, OUT_W, OUT_H);
+  redondearRectPath(ctx, 0, 0, OUT_W, OUT_H, 22 * R);
+  const fondo = ctx.createLinearGradient(0, 0, OUT_W, OUT_H);
+  fondo.addColorStop(0, tema.a); fondo.addColorStop(1, tema.b);
+  ctx.fillStyle = fondo; ctx.fill();
+
+  ctx.save();
+  redondearRectPath(ctx, 0, 0, OUT_W, OUT_H, 22 * R);
+  ctx.clip();
+  dibujarHoloEstatico(ctx, OUT_W, OUT_H);
+
+  // encabezado
+  ctx.fillStyle = tema.texto; ctx.globalAlpha = .92;
+  ctx.font = "800 " + Math.round(13 * R) + "px " + fuente;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("CARNET DE FAN", 16 * R, 26 * R);
+  ctx.textAlign = "right";
+  ctx.font = "700 " + Math.round(12 * R) + "px " + fuente;
+  ctx.fillText(estado.nivel, OUT_W - 16 * R, 26 * R);
+  ctx.globalAlpha = 1;
+
+  // foto / avatar
+  const cxFoto = OUT_W / 2, cyFoto = 66 * R, rFoto = 40 * R;
+  try {
+    const img = await cargarImagen(estado.datos.foto || estado.avatarDataURL);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cxFoto, cyFoto, rFoto, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(img, cxFoto - rFoto, cyFoto - rFoto, rFoto * 2, rFoto * 2);
+    ctx.restore();
+  } catch (e) { /* si falla la imagen, seguimos sin ella */ }
+  ctx.save();
+  ctx.lineWidth = 3 * R; ctx.strokeStyle = "rgba(255,255,255,.85)";
+  ctx.beginPath(); ctx.arc(cxFoto, cyFoto, rFoto, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+
+  // textos
+  ctx.fillStyle = tema.texto; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.font = "800 " + Math.round(18 * R) + "px " + fuenteDisplay;
+  ctx.fillText(estado.datos.nombre || "Fan", OUT_W / 2, 125 * R);
+  ctx.font = "700 " + Math.round(12 * R) + "px " + fuente;
+  ctx.fillText(estado.datos.banda || "", OUT_W / 2, 143 * R);
+  if (estado.datos.bias) {
+    ctx.font = "600 " + Math.round(10.5 * R) + "px " + fuente;
+    ctx.globalAlpha = .9;
+    ctx.fillText("Bias: " + estado.datos.bias, OUT_W / 2, 157 * R);
+    ctx.globalAlpha = 1;
+  }
+  if (estado.datos.frase) {
+    ctx.font = "italic 500 " + Math.round(10.5 * R) + "px " + fuente;
+    ctx.globalAlpha = .9;
+    ajustarTextoCanvas(ctx, estado.datos.frase, OUT_W / 2, 178 * R, OUT_W * 0.78, 14 * R);
+    ctx.globalAlpha = 1;
+  }
+
+  // fila de datos
+  const yDatos = OUT_H - 118 * R;
+  ctx.textAlign = "left";
+  ctx.globalAlpha = .78; ctx.font = "700 " + Math.round(8 * R) + "px " + fuente;
+  ctx.fillText("FAN DESDE", 16 * R, yDatos);
+  ctx.globalAlpha = 1; ctx.font = "800 " + Math.round(11.5 * R) + "px " + fuente;
+  ctx.fillText(String(estado.datos.anio || "—"), 16 * R, yDatos + 15 * R);
+  ctx.textAlign = "right";
+  ctx.globalAlpha = .78; ctx.font = "700 " + Math.round(8 * R) + "px " + fuente;
+  ctx.fillText("N.º DE SOCIA", OUT_W - 16 * R, yDatos);
+  ctx.globalAlpha = 1; ctx.font = "800 " + Math.round(11.5 * R) + "px " + fuente;
+  ctx.fillText(estado.numeroSocia, OUT_W - 16 * R, yDatos + 15 * R);
+
+  // sello
+  dibujarSelloCanvas(ctx, OUT_W - 44 * R, 46 * R, 22 * R, tema.texto);
+
+  // código de barras
+  const yBarras = OUT_H - 86 * R, altoBarras = 18 * R;
+  let xBarra = 16 * R;
+  const anchoDisponible = OUT_W - 32 * R;
+  const anchoTotalBarras = estado.barrasData.reduce((s, b) => s + b.w * R + 1.5 * R, 0);
+  const escalaBarras = Math.min(1, anchoDisponible / anchoTotalBarras);
+  ctx.fillStyle = tema.texto; ctx.globalAlpha = .85;
+  estado.barrasData.forEach(b => {
+    const w = b.w * R * escalaBarras, h = altoBarras * (b.hPct / 100);
+    ctx.fillRect(xBarra, yBarras + (altoBarras - h), w, h);
+    xBarra += w + 1.5 * R * escalaBarras;
+  });
+  ctx.globalAlpha = 1;
+
+  // pie
+  ctx.textAlign = "center"; ctx.globalAlpha = .78;
+  ctx.font = "600 " + Math.round(7.5 * R) + "px " + fuente;
+  ctx.fillText(CFG.pie, OUT_W / 2, OUT_H - 20 * R);
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+$("btn-descargar").addEventListener("click", async () => {
+  const aviso = $("aviso-carnet");
+  aviso.textContent = "Generando imagen...";
+  try {
+    await dibujarCarnetEnCanvas();
+    $("canvas-export").toBlob(blob => {
+      if (!blob) { aviso.textContent = "No se pudo generar la imagen. Probá de nuevo."; return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const nombreArchivo = "carnet-de-fan-" + (estado.datos.nombre || "fan").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      a.href = url; a.download = nombreArchivo + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      aviso.textContent = "¡Listo! Se descargó tu carnet. 💗";
+    }, "image/png", 0.95);
+  } catch (e) { aviso.textContent = "No se pudo generar la imagen. Probá de nuevo."; }
+});
+
+/* ======================================================================
+   COMPARTIR (Web Share API, si existe)
+   ====================================================================== */
+if (navigator.share) {
+  $("btn-compartir").classList.remove("oculto");
+  $("btn-compartir").addEventListener("click", async () => {
+    const aviso = $("aviso-carnet");
+    try {
+      await dibujarCarnetEnCanvas();
+      $("canvas-export").toBlob(async blob => {
+        try {
+          const file = new File([blob], "carnet-de-fan.png", { type: "image/png" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: CFG.titulo, text: "Mirá mi " + CFG.titulo.toLowerCase() });
+          } else {
+            await navigator.share({ title: CFG.titulo, text: "Mirá mi " + CFG.titulo.toLowerCase() });
+          }
+        } catch (e) { if (e && e.name !== "AbortError") aviso.textContent = "No se pudo compartir."; }
+      }, "image/png", 0.95);
+    } catch (e) { aviso.textContent = "No se pudo compartir."; }
+  });
+}
+
+/* ======================================================================
+   MODO GRABACIÓN
+   ====================================================================== */
+$("btn-grabacion").addEventListener("click", () => { document.body.classList.add("modo-grabacion"); });
+$("btn-salir-grabacion").addEventListener("click", () => { document.body.classList.remove("modo-grabacion"); });
+
+/* ======================================================================
+   INICIO
+   ====================================================================== */
+mostrarPantalla("bienvenida");
+</script>
+</body>
+</html>
